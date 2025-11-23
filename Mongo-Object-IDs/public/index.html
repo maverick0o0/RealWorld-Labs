@@ -1,0 +1,113 @@
+<!-- public/index.html (Frontend - HTML with Tailwind CSS via CDN) -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Note App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/jwt-decode@3.1.2/build/jwt-decode.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="container mx-auto p-6 max-w-lg bg-white rounded-lg shadow-lg">
+    <!-- Login Section -->
+    <div id="login" class="flex flex-col space-y-4">
+      <h1 class="text-2xl font-bold text-center">Login</h1>
+      <input id="username" type="text" placeholder="Username" class="p-2 border border-gray-300 rounded">
+      <input id="password" type="password" placeholder="Password" class="p-2 border border-gray-300 rounded">
+      <button onclick="login()" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Login</button>
+    </div>
+
+    <!-- App Section (Hidden initially) -->
+    <div id="app" class="hidden flex flex-col space-y-6">
+      <h1 class="text-2xl font-bold text-center">Notes</h1>
+      <!-- Create Note Form -->
+      <div class="flex space-x-2">
+        <input id="content" type="text" placeholder="Enter new note..." class="flex-1 p-2 border border-gray-300 rounded">
+        <button onclick="createNote()" class="bg-green-500 text-white p-2 rounded hover:bg-green-600">Create</button>
+      </div>
+      <!-- Notes List -->
+      <ul id="notes-list" class="space-y-4"></ul>
+    </div>
+  </div>
+
+  <script>
+    let token;
+    let username;
+    let role;
+
+    async function login() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        token = data.token;
+        const decoded = jwt_decode(token);
+        username = decoded.username;
+        role = decoded.role;
+
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        loadNotes();
+      } else {
+        alert('Invalid credentials');
+      }
+    }
+
+    async function loadNotes() {
+      const res = await fetch('/notes', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const notes = await res.json();
+      const list = document.getElementById('notes-list');
+      list.innerHTML = '';
+
+      notes.forEach(note => {
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center p-3 bg-gray-200 rounded';
+        li.innerHTML = `<span>${note.content} <em class="text-gray-500">by ${note.createdBy}</em></span>`;
+
+        if (note.createdBy === username || role === 'admin') {
+          const btn = document.createElement('button');
+          btn.textContent = 'Delete';
+          btn.className = 'bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600';
+          btn.onclick = () => deleteNote(note._id);
+          li.appendChild(btn);
+        }
+
+        list.appendChild(li);
+      });
+    }
+
+    async function createNote() {
+      const content = document.getElementById('content').value;
+      if (!content) return;
+
+      await fetch('/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content })
+      });
+
+      document.getElementById('content').value = '';
+      loadNotes();
+    }
+
+    async function deleteNote(id) {
+      await fetch(`/notes/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      loadNotes();
+    }
+  </script>
+</body>
+</html>
