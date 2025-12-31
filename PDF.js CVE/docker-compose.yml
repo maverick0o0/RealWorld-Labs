@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  cve-demo:
+    build: .
+    container_name: cve-2024-4367-demo
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

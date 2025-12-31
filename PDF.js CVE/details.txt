@@ -1,0 +1,1 @@
+https://codeanlabs.com/2024/05/cve-2024-4367-arbitrary-js-execution-in-pdf-js/?utm_source=blog.criticalthinkingpodcast.io&utm_medium=referral&utm_campaign=hackernotes-ep-72-research-tldrs-smuggling-payloads-in-well-known-data-types
